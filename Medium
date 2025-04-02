@@ -1,0 +1,58 @@
+import java.sql.*;
+import java.util.Scanner;
+
+public class MySQLConnect {
+    public static void main(String[] args) {
+        String url = "jdbc:mysql://localhost:3306/company_db";
+        String user = "22bcs15635";
+        String password = "Manan";
+        Scanner scanner = new Scanner(System.in);
+
+        try (Connection conn = DriverManager.getConnection(url, user, password)) {
+            while (true) {
+                System.out.println("1. Create Product  2. Read Products  3. Update Product  4. Delete Product  5. Exit");
+                switch (scanner.nextInt()) {
+                    case 1 -> executeUpdate(conn, "INSERT INTO Product (ProductName, Price, Quantity) VALUES (?, ?, ?)", scanner);
+                    case 2 -> executeQuery(conn, "SELECT * FROM Product");
+                    case 3 -> executeUpdate(conn, "UPDATE Product SET ProductName = ?, Price = ?, Quantity = ? WHERE ProductID = ?", scanner);
+                    case 4 -> executeUpdate(conn, "DELETE FROM Product WHERE ProductID = ?", scanner);
+                    case 5 -> { scanner.close(); return; }
+                    default -> System.out.println("Invalid option. Try again.");
+                }
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private static void executeUpdate(Connection conn, String query, Scanner scanner) {
+        try (PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.clearParameters();
+            scanner.nextLine();
+            if (query.startsWith("INSERT") || query.startsWith("UPDATE")) {
+                System.out.print("Enter Product Name: ");
+                pstmt.setString(1, scanner.nextLine());
+                System.out.print("Enter Price: ");
+                pstmt.setDouble(2, scanner.nextDouble());
+                System.out.print("Enter Quantity: ");
+                pstmt.setInt(3, scanner.nextInt());
+                if (query.startsWith("UPDATE")) {
+                    System.out.print("Enter Product ID: ");
+                    pstmt.setInt(4, scanner.nextInt());
+                }
+            } else if (query.startsWith("DELETE")) {
+                System.out.print("Enter Product ID to delete: ");
+                pstmt.setInt(1, scanner.nextInt());
+            }
+            pstmt.executeUpdate();
+            System.out.println("Operation successful.");
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    private static void executeQuery(Connection conn, String query) {
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
+            System.out.println("ProductID | ProductName | Price | Quantity");
+            while (rs.next()) {
+                System.out.println(rs.getInt("ProductID") + " | " + rs.getString("ProductName") + " | " + rs.getDouble("Price") + " | " + rs.getInt("Quantity"));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+}
